@@ -10,7 +10,7 @@ import java.security.PublicKey;
 import java.util.Date;
 @Slf4j
 @Service
-@Qualifier
+@Qualifier("ModifySystemTimeResponseService")
 public class ModifySystemTimeResponseService implements  ModifyResponseService{
     @Override
     public Response modify(Response response){

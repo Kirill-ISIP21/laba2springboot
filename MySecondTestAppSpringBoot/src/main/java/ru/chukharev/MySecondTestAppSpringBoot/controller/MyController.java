@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.chukharev.MySecondTestAppSpringBoot.exception.UnsupportedCodeException;
 import ru.chukharev.MySecondTestAppSpringBoot.exception.ValidationFailedException;
 import ru.chukharev.MySecondTestAppSpringBoot.model.*;
+import ru.chukharev.MySecondTestAppSpringBoot.service.ModifyRequestService;
+import ru.chukharev.MySecondTestAppSpringBoot.service.ModifyResponseService;
 import ru.chukharev.MySecondTestAppSpringBoot.service.UnsopportedCodeService;
 import ru.chukharev.MySecondTestAppSpringBoot.service.ValidationService;
 import ru.chukharev.MySecondTestAppSpringBoot.util.DateTimeUtil;
@@ -26,10 +29,17 @@ public class MyController {
 
     private final ValidationService validationService;
     private final UnsopportedCodeService unsopportedCodeService;
+    private final ModifyResponseService modifyResponseService;
+    private final ModifyRequestService modifyRequestService;
     @Autowired
-    public MyController(ValidationService validationService, UnsopportedCodeService unsopportedCodeService){
+    public MyController(ValidationService validationService,
+                        UnsopportedCodeService unsopportedCodeService,
+                        @Qualifier("ModifySystemTimeResponseService") ModifyResponseService modifyResponseService,
+                        @Qualifier("ModifySystemNameRequestService") ModifyRequestService modifyRequestService){
         this.validationService=validationService;
         this.unsopportedCodeService=unsopportedCodeService;
+        this.modifyResponseService=modifyResponseService;
+        this.modifyRequestService = modifyRequestService;
     }
     @PostMapping(value="/feedback")
     public ResponseEntity<Response> feedback(@Valid @RequestBody Request request,
@@ -72,6 +82,10 @@ public class MyController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 
         }
+
+        modifyResponseService.modify(response);
+        modifyRequestService.modify(request);
+
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
