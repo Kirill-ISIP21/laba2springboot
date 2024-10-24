@@ -7,16 +7,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import ru.chukharev.MySecondTestAppSpringBoot.model.Request;
-import ru.chukharev.MySecondTestAppSpringBoot.util.DateTimeUtil;
-
-import java.util.Date;
 
 @Service
-@Qualifier("ModifySystemTimeRequestService")
-public class ModifySystemTimeRequestService implements ModifyRequestService{
+@Qualifier("ModifySourceRequestService")
+public class ModifySourceRequestService implements ModifyRequestService{
     @Override
     public void modify(Request request) {
-        request.setSystemTime(DateTimeUtil.getCustomFormat().format(new Date()));
+        request.setSource("2");
 
         HttpEntity<Request> httpEntity = new HttpEntity<>(request);
 
@@ -25,6 +22,5 @@ public class ModifySystemTimeRequestService implements ModifyRequestService{
                 httpEntity,
                 new ParameterizedTypeReference<>() {
                 });
-
     }
 }

@@ -14,13 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.chukharev.MySecondTestAppSpringBoot.exception.UnsupportedCodeException;
 import ru.chukharev.MySecondTestAppSpringBoot.exception.ValidationFailedException;
 import ru.chukharev.MySecondTestAppSpringBoot.model.*;
-import ru.chukharev.MySecondTestAppSpringBoot.service.ModifyRequestService;
-import ru.chukharev.MySecondTestAppSpringBoot.service.ModifyResponseService;
-import ru.chukharev.MySecondTestAppSpringBoot.service.UnsopportedCodeService;
-import ru.chukharev.MySecondTestAppSpringBoot.service.ValidationService;
+import ru.chukharev.MySecondTestAppSpringBoot.service.*;
 import ru.chukharev.MySecondTestAppSpringBoot.util.DateTimeUtil;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 
 @Slf4j
@@ -28,26 +26,44 @@ import java.util.Date;
 public class MyController {
 
     private final ValidationService validationService;
-    private final UnsopportedCodeService unsopportedCodeService;
+    private final CodeService codeService;
     private final ModifyResponseService modifyResponseService;
     private final ModifyRequestService modifyRequestService;
+
     @Autowired
     public MyController(ValidationService validationService,
-                        UnsopportedCodeService unsopportedCodeService,
+                        CodeService codeService,
                         @Qualifier("ModifySystemTimeResponseService") ModifyResponseService modifyResponseService,
-                        @Qualifier("ModifySystemNameRequestService") ModifyRequestService modifyRequestService){
-        this.validationService=validationService;
-        this.unsopportedCodeService=unsopportedCodeService;
-        this.modifyResponseService=modifyResponseService;
+                        @Qualifier("ModifySystemTimeRequestService") ModifyRequestService modifyRequestService) {
+        this.validationService = validationService;
+        this.codeService = codeService;
+        this.modifyResponseService = modifyResponseService;
         this.modifyRequestService = modifyRequestService;
     }
-    @PostMapping(value="/feedback")
-    public ResponseEntity<Response> feedback(@Valid @RequestBody Request request,
-                                             BindingResult bindingResult){
+    @PostMapping(value = "/feedback")
+    public ResponseEntity<Response> feedback(@Valid @RequestBody Request request, BindingResult bindingResult){
+
         log.info("request: {}", request);
 
+        Response response = createDefaultResponse(request);
 
-        Response response = Response.builder()
+        try{
+            codeService.isValid(request, bindingResult);
+            validationService.isValid(bindingResult);
+        } catch (UnsupportedCodeException e) {
+            return handleException(response, Codes.FAILED, ErrorCodes.UNSOPPORTED_EXCEPTION, ErrorMessages.UNSOPPORTED, HttpStatus.BAD_REQUEST);
+        } catch (ValidationFailedException e) {
+            return handleException(response, Codes.FAILED, ErrorCodes.VALIDATION_EXCEPTION, ErrorMessages.VALIDATION, HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return handleException(response, Codes.FAILED, ErrorCodes.UNKNOWN_EXCEPTION, ErrorMessages.UNKNOWN, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        //modifyRequestService.modify(request);
+        return new ResponseEntity<>(modifyResponseService.modify(response), HttpStatus.OK);
+    }
+
+    private Response createDefaultResponse(Request request) {
+        return Response.builder()
                 .uid(request.getUid())
                 .operationUid(request.getOperationUid())
                 .systemTime(DateTimeUtil.getCustomFormat().format(new Date()))
@@ -55,37 +71,13 @@ public class MyController {
                 .errorCode(ErrorCodes.EMPTY)
                 .errorMessage(ErrorMessages.EMPTY)
                 .build();
-        log.info("response: {}", response);
+    }
 
-        try {
-            validationService.isValid(bindingResult);
-            unsopportedCodeService.isValid(request,bindingResult);
-        } catch (UnsupportedCodeException e){
-            response.setCode(Codes.FAILED);
-            response.setErrorCode(ErrorCodes.UNSOPPORTED_EXCEPTION);
-            response.setErrorMessage(ErrorMessages.UNSOPPORTED);
-            log.error("Error: {}", e);
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-
-        } catch (ValidationFailedException e){
-            response.setCode(Codes.FAILED);
-            response.setErrorCode(ErrorCodes.VALIDATION_EXCEPTION);
-            response.setErrorMessage(ErrorMessages.VALIDATION);
-            log.error("Error: {}", e);
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-
-        } catch (Exception e){
-            response.setCode(Codes.FAILED);
-            response.setErrorCode(ErrorCodes.UNKNOWN_EXCEPTION);
-            response.setErrorMessage(ErrorMessages.UNKNOWN);
-            log.error("Error: {}", e);
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-
-        }
-
-        modifyResponseService.modify(response);
-        modifyRequestService.modify(request);
-
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    private ResponseEntity<Response> handleException(Response response, Codes code, ErrorCodes errorCode, ErrorMessages errorMessage, HttpStatus status) {
+        response.setCode(code);
+        response.setErrorCode(errorCode);
+        response.setErrorMessage(errorMessage);
+        log.error("response: {}", response);
+        return new ResponseEntity<>(response, status);
     }
 }

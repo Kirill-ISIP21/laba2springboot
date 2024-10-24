@@ -17,26 +17,49 @@ import ru.chukharev.MySecondTestAppSpringBoot.util.Systems;
 @AllArgsConstructor
 public class Request {
 
-    @NotBlank
-    @Size(min=0, max = 32)
-    private String uid;
 
     @NotBlank
     @Size(min=0, max = 32)
-    private String operationUid;
-
-    private Systems systemName;
+    private String uid; //Уникальный идентификатор сообщения
 
     @NotBlank
-    private String systemTime;
+    @Size(min=0, max = 32)
+    private String operationUid; //Уникальный идентификатор операции
 
-    private String source;
+    private Systems systemName; //Имя системы отправителя
+
+    @NotBlank
+    private String systemTime; //Время создания сообщения
+
+    private String source; //Наименование ресурса
+
+    private Positions positions; //Должность
+    private Boolean isManager; //Проверка на управленческую должность
+    private Double salary; //Зарплата
+    private Double bonus; //Премия
+    private Integer workDays; //Количество отработанных дней за год
 
     @Min(1)
     @Max(100000)
-    private int communicationId;
+    private int communicationId; //Уникальный идентификатор ресурса
 
-    private int templateId;
-    private int productCode;
-    private int smsCode;
+    private int templateId; //Уникальный идентификатор шаблона
+    private int productCode; //Код продукта
+    private int smsCode; //Смс код
+
+
+    @Override
+    public String toString(){
+        return "{"+
+                "uid='" + uid + '\'' +
+                ", operationUid='" + operationUid + '\'' +
+                ", systemName='" + systemName + '\'' +
+                ", systemTime='" + systemTime + '\'' +
+                ", source='" + source + '\'' +
+                ", communicationId=" + communicationId +
+                ", templateId=" + templateId +
+                ", productCode=" + productCode +
+                ", smsCode=" + smsCode +
+                '}';
+    }
 }
